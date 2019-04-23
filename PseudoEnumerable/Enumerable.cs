@@ -25,19 +25,7 @@ namespace PseudoEnumerable
 
             return Filtration(source, predicate);
         }
-
-        private static IEnumerable<TSource> Filtration<TSource>(this IEnumerable<TSource> source,
-            Func<TSource, bool> predicate)
-        {
-            foreach (var item in source)
-            {
-                if (predicate(item))
-                {
-                    yield return item;
-                }
-            }
-        }
-
+        
         /// <summary>
         /// Transforms each element of a sequence into a new form.
         /// </summary>
@@ -143,6 +131,18 @@ namespace PseudoEnumerable
             {
                 throw new ArgumentNullException("Arguments cannot be null.");
             }
-        }        
+        }
+
+        private static IEnumerable<TSource> Filtration<TSource>(this IEnumerable<TSource> source,
+           Func<TSource, bool> predicate)
+        {
+            foreach (var item in source)
+            {
+                if (predicate(item))
+                {
+                    yield return item;
+                }
+            }
+        }
     }
 }
