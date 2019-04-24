@@ -25,7 +25,7 @@ namespace PseudoEnumerable
 
             return Filtration(source, predicate);
         }
-        
+
         /// <summary>
         /// Transforms each element of a sequence into a new form.
         /// </summary>
@@ -42,7 +42,9 @@ namespace PseudoEnumerable
         public static IEnumerable<TResult> Transform<TSource, TResult>(this IEnumerable<TSource> source,
             Func<TSource, TResult> transformer)
         {
-            throw new NotImplementedException();
+            Check(source, transformer);
+
+            return Transformation(source, transformer);
         }
 
         /// <summary>
@@ -58,10 +60,7 @@ namespace PseudoEnumerable
         /// <exception cref="ArgumentNullException">Throws if <paramref name="source"/> is null.</exception>
         /// <exception cref="ArgumentNullException">Throws if <paramref name="key"/> is null.</exception>
         public static IEnumerable<TSource> SortBy<TSource, TKey>(this IEnumerable<TSource> source,
-            Func<TSource, TKey> key)
-        {
-            throw new NotImplementedException();
-        }
+            Func<TSource, TKey> key) => SortBy(source, key, Comparer<TKey>.Default);
 
         /// <summary>
         /// Sorts the elements of a sequence in ascending order according by using a specified comparer for a key .
@@ -80,7 +79,54 @@ namespace PseudoEnumerable
         public static IEnumerable<TSource> SortBy<TSource, TKey>(this IEnumerable<TSource> source,
             Func<TSource, TKey> key, IComparer<TKey> comparer)
         {
-            throw new NotImplementedException();
+            Check(source, key);
+            if (comparer is null)
+            {
+                throw new ArgumentNullException("Comparer cannot be null.");
+            }
+
+            return Sorted(source, key, comparer);
+        }
+
+        /// <summary>
+        /// Sorts the elements of a sequence in descending order according to a key.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the elements of source.</typeparam>
+        /// <typeparam name="TKey">The type of the key returned by key.</typeparam>
+        /// <param name="source">A sequence of values to order.</param>
+        /// <param name="key">A function to extract a key from an element.</param>
+        /// <returns>
+        ///     An <see cref="IEnumerable{TSource}"/> whose elements are sorted according to a key.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">Throws if <paramref name="source"/> is null.</exception>
+        /// <exception cref="ArgumentNullException">Throws if <paramref name="key"/> is null.</exception>
+        public static IEnumerable<TSource> SortByDescending<TSource, TKey>(this IEnumerable<TSource> source,
+           Func<TSource, TKey> key) => SortByDescending(source, key, Comparer<TKey>.Default);
+
+        /// <summary>
+        /// Sorts the elements of a sequence in descending order according by using a specified comparer for a key .
+        /// </summary>
+        /// <typeparam name="TSource">The type of the elements of source.</typeparam>
+        /// <typeparam name="TKey">The type of the key returned by key.</typeparam>
+        /// <param name="source">A sequence of values to order.</param>
+        /// <param name="key">A function to extract a key from an element.</param>
+        /// <param name="comparer">An <see cref="IComparer{T}"/> to compare keys.</param>
+        /// <returns>
+        ///     An <see cref="IEnumerable{TSource}"/> whose elements are sorted according to a key.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">Throws if <paramref name="source"/> is null.</exception>
+        /// <exception cref="ArgumentNullException">Throws if <paramref name="key"/> is null.</exception>
+        /// <exception cref="ArgumentNullException">Throws if <paramref name="comparer"/> is null.</exception>
+        public static IEnumerable<TSource> SortByDescending<TSource, TKey>(this IEnumerable<TSource> source,
+          Func<TSource, TKey> key, IComparer<TKey> comparer)
+        {
+            Check(source, key);
+            if (comparer is null)
+            {
+                throw new ArgumentNullException("Comparer cannot be null.");
+            }
+
+            return Sorted(source, key, comparer, false);
         }
 
         /// <summary>
@@ -95,7 +141,13 @@ namespace PseudoEnumerable
         /// <exception cref="InvalidCastException">An element in the sequence cannot be cast to type TResult.</exception>
         public static IEnumerable<TResult> CastTo<TResult>(IEnumerable source)
         {
-            throw new NotImplementedException();
+            Check(source);
+            if (source is IEnumerable<TResult> result)
+            {
+                return result;
+            }
+
+            return Casting<TResult>(source);
         }
 
         /// <summary>
@@ -125,11 +177,19 @@ namespace PseudoEnumerable
             return true;
         }
 
-        private static void Check<TSource, TResult>(IEnumerable<TSource> collection, Func<TSource,TResult> del)
+        private static void Check<TSource, TResult>(IEnumerable<TSource> collection, Func<TSource, TResult> del)
         {
-            if (collection == null || del ==null)
+            if (collection == null || del == null)
             {
                 throw new ArgumentNullException("Arguments cannot be null.");
+            }
+        }
+
+        private static void Check(IEnumerable collection)
+        {
+            if (collection is null)
+            {
+                throw new ArgumentNullException("Collection cannot be null.");
             }
         }
 
@@ -142,6 +202,77 @@ namespace PseudoEnumerable
                 {
                     yield return item;
                 }
+            }
+        }
+
+        private static IEnumerable<TResult> Transformation<TSource, TResult>(this IEnumerable<TSource> collection, Func<TSource, TResult> transformer)
+        {
+            foreach (var item in collection)
+            {
+                yield return transformer(item);
+            }
+        }
+
+        private static IEnumerable<TResult> Casting<TResult>(IEnumerable source)
+        {
+            TResult element;
+            foreach (var item in source)
+            {
+                element = (TResult)item;
+                if (element != null)
+                {
+                    yield return element;
+                }
+                else
+                {
+                    throw new InvalidCastException($"An element in the sequence cannot be cast to type {typeof(TResult)}");
+                }
+            }
+        }
+
+        private static IEnumerable<TSource> Sorted<TKey, TSource>(IEnumerable<TSource> source, Func<TSource, TKey> key, IComparer<TKey> comparer, bool order = true)
+        {
+            var values = new List<TSource>(source);
+            var keys = new List<TKey>(values.Count);
+
+            foreach (var item in source)
+            {
+                keys.Add(key(item));
+            }
+
+            var valuesArray = values.ToArray();
+            var keysArray = keys.ToArray();
+            var adapter = new ComparerAdapter<TKey>(comparer, order);
+
+            Array.Sort(keysArray, valuesArray, adapter);
+
+            for (int i = 0; i < keysArray.Length; i++)
+            {
+                yield return valuesArray[i];
+            }
+        }
+
+        private class ComparerAdapter<T> : IComparer<T>
+        {
+            private int key;
+            private IComparer<T> comparer;
+
+            public ComparerAdapter(IComparer<T> comparer, bool key)
+            {
+                if (key)
+                {
+                    this.key = 1;
+                }
+                else
+                {
+                    this.key = -1;
+                }
+                this.comparer = comparer;
+            }
+
+            public int Compare(T x, T y)
+            {
+                return comparer.Compare(x, y) * key;
             }
         }
     }
