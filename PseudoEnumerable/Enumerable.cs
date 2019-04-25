@@ -139,9 +139,13 @@ namespace PseudoEnumerable
         /// </returns>
         /// <exception cref="ArgumentNullException">Throws if <paramref name="source"/> is null.</exception>
         /// <exception cref="InvalidCastException">An element in the sequence cannot be cast to type TResult.</exception>
-        public static IEnumerable<TResult> CastTo<TResult>(IEnumerable source)
+        public static IEnumerable<TResult> CastTo<TResult>(this IEnumerable source)
         {
-            Check(source);
+            if (source is null)
+            {
+                throw new ArgumentNullException("Collection cannot be null.");
+            }
+
             if (source is IEnumerable<TResult> result)
             {
                 return result;
@@ -185,14 +189,6 @@ namespace PseudoEnumerable
             }
         }
 
-        private static void Check(IEnumerable collection)
-        {
-            if (collection is null)
-            {
-                throw new ArgumentNullException("Collection cannot be null.");
-            }
-        }
-
         private static IEnumerable<TSource> Filtration<TSource>(this IEnumerable<TSource> source,
            Func<TSource, bool> predicate)
         {
@@ -215,40 +211,33 @@ namespace PseudoEnumerable
 
         private static IEnumerable<TResult> Casting<TResult>(IEnumerable source)
         {
-            TResult element;
             foreach (var item in source)
             {
-                element = (TResult)item;
-                if (element != null)
-                {
-                    yield return element;
-                }
-                else
-                {
-                    throw new InvalidCastException($"An element in the sequence cannot be cast to type {typeof(TResult)}");
-                }
+                yield return (TResult)item;
             }
         }
 
         private static IEnumerable<TSource> Sorted<TKey, TSource>(IEnumerable<TSource> source, Func<TSource, TKey> key, IComparer<TKey> comparer, bool order = true)
         {
-            var values = new List<TSource>(source);
-            var keys = new List<TKey>(values.Count);
+            var collection = source as ICollection<TSource>;
+            var values = new TSource[collection.Count];
+            var keys = new TKey[values.Length];
 
+            int k = 0;
             foreach (var item in source)
             {
-                keys.Add(key(item));
+                values[k] = item;
+                keys[k] = (key(item));
+                k++;
             }
 
-            var valuesArray = values.ToArray();
-            var keysArray = keys.ToArray();
             var adapter = new ComparerAdapter<TKey>(comparer, order);
 
-            Array.Sort(keysArray, valuesArray, adapter);
+            Array.Sort(keys, values, adapter);
 
-            for (int i = 0; i < keysArray.Length; i++)
+            for (int i = 0; i < keys.Length; i++)
             {
-                yield return valuesArray[i];
+                yield return values[i];
             }
         }
 
