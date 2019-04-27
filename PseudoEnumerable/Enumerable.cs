@@ -181,6 +181,31 @@ namespace PseudoEnumerable
             return true;
         }
 
+        /// <summary>
+        /// Generates a sequence of integers.
+        /// </summary>
+        /// <param name="start">Particular number the sequence starts from.</param>
+        /// <param name="count">Number of integers in the sequence.</param>
+        /// <returns>An <see cref="IEnumerable{T}"/> that contains the sequence of integers.</returns>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="count"/> is less than or equal to zero.</exception>
+        public static IEnumerable<int> GenerateNumbers(int start, int count)
+        {
+            if (count < 0)
+            {
+                throw new ArgumentException("Number of elements cannot be less than 0.");
+            }
+
+            return Generate();
+
+            IEnumerable<int> Generate()
+            {
+                for (int i = start; count > 0; i++, count--)
+                {
+                    yield return i;
+                }
+            }
+        }
+
         private static void Check<TSource, TResult>(IEnumerable<TSource> collection, Func<TSource, TResult> del)
         {
             if (collection == null || del == null)

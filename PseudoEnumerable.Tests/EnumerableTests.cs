@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using NET1.S._2019.Piskur._07.Classes;
@@ -49,6 +50,20 @@ namespace PseudoEnumerable.Tests
             Assert.AreEqual(expected, Enumerable.Filter(array, predicate));
         }
 
+        [Test]
+        public void FilterWithNullSourceTest()
+        {
+            Func<int, bool> predicate = number => Math.Abs(number % 2) == 0;
+            Assert.Throws<ArgumentNullException>(() => Enumerable.Filter(null, predicate));
+        }
+
+        [Test]
+        public void FilterWithNullPredicateTest()
+        {
+            var array = new string[] { "one", "two", "three", "four" };
+            Assert.Throws<ArgumentNullException>(() => Enumerable.Filter(array, null));
+        }
+
         #endregion
 
         #region ForAll Tests
@@ -69,6 +84,109 @@ namespace PseudoEnumerable.Tests
         {
             Func<string, bool> predicate = str => str.Length == 6;
             return Enumerable.ForAll(array, predicate);
+        }
+
+        [Test]
+        public void ForAllWithPersonTest1()
+        {
+            var array = new Person[]
+            {
+                new Person("Jack", 21),
+                new Person("Tom", 35),
+                new Person("Jane", 12),
+                new Person("Tom", 27),
+                new Person("Alice", 60)
+            };
+            Func<Person, bool> predicate = person => person.Age < 30;
+            Assert.AreEqual(false, Enumerable.ForAll(array, predicate));
+        }
+
+        [Test]
+        public void ForAllWithPersonTest2()
+        {
+            var array = new Person[]
+            {
+                new Person("Jack", 21),
+                new Person("Tom", 5),
+                new Person("Jane", 12),
+                new Person("Tom", 27),
+                new Person("Alice", 5)
+            };
+            Func<Person, bool> predicate = person => person.Age < 30;
+            Assert.AreEqual(true, Enumerable.ForAll(array, predicate));
+        }
+
+        [Test]
+        public void ForAllWithNullSourceTest()
+        {
+            Func<string, bool> predicate = str => str.Length < 10;
+            Assert.Throws<ArgumentNullException>(() => Enumerable.ForAll(null, predicate));
+        }
+
+        [Test]
+        public void ForAllWithNullPredicateTest()
+        {
+            var array = new string[] { "one", "two", "three", "four" };
+            Assert.Throws<ArgumentNullException>(() => Enumerable.ForAll(array, null));
+        }
+
+        #endregion
+
+        #region Transform Tests
+
+        [TestCase(new double[] { 0.001, 12, -65.09, 123.9, 0.5 }, ExpectedResult = new int[] { 0, 12, -65, 123, 0 })]
+        [TestCase(new double[] { 0.0001, 0.0002, 0.0003, -0.0004, -0.004 }, ExpectedResult = new int[] { 0, 0, 0, 0, 0 })]
+        [TestCase(new double[] { 13, 77, 90, -3, 7483274, -378 }, ExpectedResult = new int[] { 13, 77, 90, -3, 7483274, -378 })]
+        public IEnumerable<int> TransformDoubleToIntTest(double[] array)
+        {
+            Func<double, int> transformer = d => (int)d;
+            return Enumerable.Transform(array, transformer);
+        }
+
+        [TestCase(new char[] { 'a', '1', '@', '*', '7' }, ExpectedResult = new string[] { "a", "1", "@", "*", "7" })]
+        [TestCase(new char[] { ' ', '0', '/', '9', 'т' }, ExpectedResult = new string[] { " ", "0", "/", "9", "т" })]
+        public IEnumerable<string> TransformCharToStringTest(char[] array)
+        {
+            Func<char, string> transformer = ch => ch.ToString();
+            return Enumerable.Transform(array, transformer);
+        }
+
+        [Test]
+        public void TransformPointToStringTest()
+        {
+            var array = new Point[] { new Point(10, 20), new Point(-3, -4), new Point(0, 0), new Point(3, 1), new Point(-1, 1) };
+            var expected = new string[] { "10", "-3", "0", "3", "-1" };
+            Func<Point, string> transformer = ch => ch.X.ToString();
+            Assert.AreEqual(expected, Enumerable.Transform(array, transformer));
+        }
+
+        [Test]
+        public void TransformTupleToPersonTest()
+        {
+            var array = new (string, int)[] { ("Jack", 21), ("Tom", 35), ("Jane", 12), ("Alice", 60) };
+            var expected = new Person[]
+            {
+                new Person("Jack", 21),
+                new Person("Tom", 35),
+                new Person("Jane", 12),
+                new Person("Alice", 60)
+            };
+            Func<(string, int), Person> transformer = tuple => new Person(tuple.Item1, tuple.Item2);
+            Assert.AreEqual(expected, Enumerable.Transform(array, transformer).ToArray());
+        }
+
+        [Test]
+        public void TransformlWithNullDelegateTest()
+        {
+            var array = new string[] { "one", "two", "three", "four" };
+            Assert.Throws<ArgumentNullException>(() => Enumerable.Transform<string, int>(array, null));
+        }
+
+        [Test]
+        public void TransformlWithNullSourceTest()
+        {
+            Func<string, int> transformer = item => item.Length;
+            Assert.Throws<ArgumentNullException>(() => Enumerable.Transform(null, transformer));
         }
 
         #endregion
@@ -112,6 +230,28 @@ namespace PseudoEnumerable.Tests
             Assert.AreEqual(expected, Enumerable.SortBy(array, sorter, comparer).ToArray());
         }
 
+        [Test]
+        public void SortByWithNullSourceTest()
+        {
+            Func<string, int> sorter = item => item.Length;
+            Assert.Throws<ArgumentNullException>(() => Enumerable.SortBy(null, sorter));
+        }
+
+        [Test]
+        public void SortByWithNullDelegateTest()
+        {
+            var array = new int[] { 9, 100, 0, 237284, 3, 1 };
+            Assert.Throws<ArgumentNullException>(() => Enumerable.SortBy<int, string>(array, null));
+        }
+
+        [Test]
+        public void SortByWithNullComparerTest()
+        {
+            var array = new string[] { "11111", "1111", "1", "11", "string", "1111111111", "1" };
+            Func<string, int> sorter = item => item.Length;
+            Assert.Throws<ArgumentNullException>(() => Enumerable.SortBy(array, sorter, null));
+        }
+
         #endregion
 
         #region SortBy Descending Tests
@@ -153,6 +293,41 @@ namespace PseudoEnumerable.Tests
             Assert.AreEqual(expected, Enumerable.SortByDescending(array, sorter, comparer).ToArray());
         }
 
+        [Test]
+        public void SortDescendingByWithNullSourceTest()
+        {
+            Func<string, int> sorter = item => item.Length;
+            Assert.Throws<ArgumentNullException>(() => Enumerable.SortByDescending(null, sorter));
+        }
+
+        [Test]
+        public void SortByDescendingWithNullDelegateTest()
+        {
+            var array = new int[] { 9, 100, 0, 237284, 3, 1 };
+            Assert.Throws<ArgumentNullException>(() => Enumerable.SortByDescending<int, string>(array, null));
+        }
+
+        [Test]
+        public void SortByDescendingWithNullComparerTest()
+        {
+            var array = new string[] { "11111", "1111", "1", "11", "string", "1111111111", "1" };
+            Func<string, int> sorter = item => item.Length;
+            Assert.Throws<ArgumentNullException>(() => Enumerable.SortByDescending(array, sorter, null));
+        }
+
+        #endregion       
+
+        #region Generator Tests
+
+        [TestCase(-1, 12, ExpectedResult = new int[] { -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 })]
+        [TestCase(234, 1, ExpectedResult = new int[] { 234 })]
+        [TestCase(7, 0, ExpectedResult = new int[] { })]
+        public IEnumerable<int> GeneratorTest(int start, int count) => Enumerable.GenerateNumbers(start, count);
+
+        [Test]
+        public void GeneratorWithInvalidArgumentTest() =>
+            Assert.Throws<ArgumentException>(() => Enumerable.GenerateNumbers(1, -1));
+
         #endregion
     }
 
@@ -165,6 +340,17 @@ namespace PseudoEnumerable.Tests
         {
             X = x;
             Y = y;
+        }
+    }
+
+    public class Person
+    {
+        public string Name { get; set; }
+        public int Age { get; set; }
+        public Person(string name, int age)
+        {
+            Name = name;
+            Age = age;
         }
     }
 }
